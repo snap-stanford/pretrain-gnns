@@ -33,8 +33,8 @@ rdkit                     2019.03.1.0
 ## Dataset download
 All the necessary data files can be downloaded from the following links.
 
-For the chemistry dataset, download from [chem data](https://drive.google.com/open?id=1C7kYUBZPtKp3v0RiksAJX_XsEqZ-N4pq) (2.5GB), unzip it, and put it under `chem/`.
-For the biology dataset, download from [bio data](https://drive.google.com/open?id=1xgwDVGgG0MS4YlyHfwM0ZSiVC7lTL01_) (2GB), unzip it, and put it under `bio/`.
+For the chemistry dataset, download from [chem data](http://snap.stanford.edu/gnn-pretrain/data/chem_dataset.zip) (2.5GB), unzip it, and put it under `chem/`.
+For the biology dataset, download from [bio data](http://snap.stanford.edu/gnn-pretrain/data/bio_dataset.zip) (2GB), unzip it, and put it under `bio/`.
 
 ## Pre-training and fine-tuning
 In each directory, we have three kinds of files used to train GNNs.
