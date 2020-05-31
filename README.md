@@ -28,6 +28,8 @@ torch-scatter             1.1.2
 torch-sparse              0.2.4
 torch-spline-conv         1.0.6
 rdkit                     2019.03.1.0
+tqdm                      4.31.1
+tensorboardx              1.6
 ```
 
 ## Dataset download
