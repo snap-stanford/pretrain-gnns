@@ -2,7 +2,8 @@ import argparse
 
 from splitters import random_split, species_split
 from loader import BioDataset
-from torch_geometric.data import DataLoader
+from dataloader import DataLoaderFinetune
+# from torch_geometric.data import DataLoader
 
 import torch
 import torch.nn as nn
@@ -103,7 +104,10 @@ def main():
         raise ValueError("Unknown split name.")
 
 
-    train_loader = DataLoader(pretrain_dataset, batch_size=args.batch_size, shuffle=True, num_workers = args.num_workers)
+    # train_loader = DataLoader(pretrain_dataset, batch_size=args.batch_size, shuffle=True, num_workers = args.num_workers)
+    # (Note) Fixed the bug here. DataloaderFinetune should be used here to increment the center_node_idx. 
+    # The resluts in the paper are obtained with the original pytorch geometric dataloder, so the results with the correct dataloader might be slightly different.
+    train_loader = DataLoaderFinetune(pretrain_dataset, batch_size=args.batch_size, shuffle=True, num_workers = args.num_workers)
 
     num_tasks = len(pretrain_dataset[0].go_target_pretrain)
 
