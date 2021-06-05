@@ -253,6 +253,7 @@ def main():
 
     if not args.filename == "":
         writer.close()
+    torch.save(model.state_dict(), "output.pth")
 
 
 if __name__ == "__main__":
