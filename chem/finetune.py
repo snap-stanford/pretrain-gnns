@@ -83,6 +83,10 @@ def eval(args, model, device, loader):
     return sum(roc_list) / len(roc_list)  # y_true.shape[1]
 
 
+
+
+
+
 def main():
     # Training settings
     parser = argparse.ArgumentParser(
@@ -193,6 +197,9 @@ def main():
     # set up model
     model = GNN_graphpred(args.num_layer, args.emb_dim, num_tasks, JK=args.JK,
                           drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling, gnn_type=args.gnn_type)
+
+    for param in model.state_dict():
+    	print(param)
     if not args.input_model_file == "":
         model.from_pretrained(args.input_model_file)
 
@@ -253,7 +260,7 @@ def main():
 
     if not args.filename == "":
         writer.close()
-    torch.save(model.state_dict(), "output.pth")
+    torch.save(model.state_dict(), "output/trained_model.pth")
 
 
 if __name__ == "__main__":
