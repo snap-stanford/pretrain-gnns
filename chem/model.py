@@ -387,7 +387,7 @@ class GNN_graphpred(torch.nn.Module):
 
         node_representation = self.gnn(x, edge_index, edge_attr)
 
-        return self.graph_pred_linear(self.pool(node_representation, batch))
+        return self.graph_pred_linear(self.pool(node_representation, batch)), self.pool(node_representation, batch)
 
 
 if __name__ == "__main__":
