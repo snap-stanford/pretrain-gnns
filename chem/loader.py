@@ -16,6 +16,7 @@ from torch_geometric.data import Data
 from torch_geometric.data import InMemoryDataset
 from torch_geometric.data import Batch
 from itertools import repeat, product, chain
+from tqdm import tqdm
 
 
 # allowable node and edge features
@@ -289,15 +290,15 @@ class MoleculeDataset(InMemoryDataset):
             self.data, self.slices = torch.load(self.processed_paths[0])
 
 
-    def get(self, idx):
-        data = Data()
-        for key in self.data.keys:
-            item, slices = self.data[key], self.slices[key]
-            s = list(repeat(slice(None), item.dim()))
-            s[data.__cat_dim__(key, item)] = slice(slices[idx],
-                                                    slices[idx + 1])
-            data[key] = item[s]
-        return data
+    # def get(self, idx):
+    #     data = Data()
+    #     for key in self.data.keys:
+    #         item, slices = self.data[key], self.slices[key]
+    #         s = list(repeat(slice(None), item.dim()))
+    #         s[data.__cat_dim__(key, item)] = slice(slices[idx],
+    #                                                 slices[idx + 1])
+    #         data[key] = item[s]
+    #     return data
 
 
     @property
@@ -718,7 +719,32 @@ class MoleculeDataset(InMemoryDataset):
                     data_list.append(data)
                     data_smiles_list.append(smiles_list[i])
 
+        elif self.dataset == 'adrb2_vae':
+            smiles_lists = []
+            data_list = []
+            data_smiles_list = []
 
+            for file, label, type_ in [('AID492947_active_T.smi', 1, 'train'),
+                                       ('AID492947_active_V.smi', 1, 'val'),
+                                       ('AID492947_inactive_T.smi', 0, 'train'),
+                                       ('AID492947_inactive_V.smi', 0, 'val')]:
+                smiles_path =  os.path.join(self.root, 'raw', file)
+                smiles_list = pd.read_csv(smiles_path, sep=' ', header=None)[0]
+                # labels = [label]* len(smiles_list)
+                # types = [type_] * len(smiles_list)
+
+
+                for i in tqdm(range(len(smiles_list)), desc = f'{file}'):
+                    smi = smiles_list[i]
+                    mol = Chem.MolFromSmiles(smi)
+                    if mol != None:
+                        data = mol_to_graph_data_obj_simple(mol)
+                        data.id = torch.tensor([i])
+                        data.y = torch.tensor([label])
+                        data.type = type_
+                        #print(data)
+                        data_list.append(data)
+                        data_smiles_list.append(smiles_list[i])
         else:
             raise ValueError('Invalid dataset name')
 
@@ -1324,6 +1350,8 @@ def create_all_datasets():
 
 # test MoleculeDataset object
 if __name__ == "__main__":
-
-    create_all_datasets()
+    print('testing...')
+    a = MoleculeDataset(root = 'D:/Documents/JupyterNotebook/Hit_Explosion/data/lit-pcba/VAE/ADRB2', dataset = 'adrb2_vae')
+    print(a[0])
+    #create_all_datasets()
 

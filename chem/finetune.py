@@ -30,8 +30,8 @@ def train(args, model, device, loader, optimizer):
 
     for step, batch in enumerate(tqdm(loader, desc="Iteration")):
         batch = batch.to(device)
-        pred = model(batch.x, batch.edge_index,
-                     batch.edge_attr, batch.batch)
+        pred, h = model(batch.x, batch.edge_index,
+                        batch.edge_attr, batch.batch)
         y = batch.y.view(pred.shape).to(torch.float64)
 
         # Whether y is non-null or not.
@@ -81,10 +81,6 @@ def eval(args, model, device, loader):
               (1 - float(len(roc_list)) / y_true.shape[1]))
 
     return sum(roc_list) / len(roc_list)  # y_true.shape[1]
-
-
-
-
 
 
 def main():
@@ -158,17 +154,21 @@ def main():
         num_tasks = 27
     elif args.dataset == "clintox":
         num_tasks = 2
+    elif args.dataset == "adrb2":
+        num_tasks = 1
     else:
         raise ValueError("Invalid dataset name.")
 
     # set up dataset
-    dataset = MoleculeDataset("dataset/" + args.dataset, dataset=args.dataset)
+    # MoleculeDataset("dataset/" + args.dataset, dataset=args.dataset)
+    dataset = MoleculeDataset(
+        "D:/Documents/JupyterNotebook/Hit_Explosion/data/lit-pcba/VAE/" + args.dataset.upper(), dataset=args.dataset)
 
     print(dataset)
 
     if args.split == "scaffold":
         smiles_list = pd.read_csv(
-            'dataset/' + args.dataset + '/processed/smiles.csv', header=None)[0].tolist()
+            "D:/Documents/JupyterNotebook/Hit_Explosion/data/lit-pcba/VAE/" + args.dataset.upper() + '/processed/smiles.csv', header=None)[0].tolist()
         train_dataset, valid_dataset, test_dataset = scaffold_split(
             dataset, smiles_list, null_value=0, frac_train=0.8, frac_valid=0.1, frac_test=0.1)
         print("scaffold")
@@ -187,19 +187,20 @@ def main():
 
     print(train_dataset[0])
 
+    print('loading data')
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(valid_dataset, batch_size=args.batch_size,
                             shuffle=False, num_workers=args.num_workers)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
                              shuffle=False, num_workers=args.num_workers)
-
+    print('data loaded!')
     # set up model
     model = GNN_graphpred(args.num_layer, args.emb_dim, num_tasks, JK=args.JK,
                           drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling, gnn_type=args.gnn_type)
 
     for param in model.state_dict():
-    	print(param)
+        print(param)
     if not args.input_model_file == "":
         model.from_pretrained(args.input_model_file)
 
