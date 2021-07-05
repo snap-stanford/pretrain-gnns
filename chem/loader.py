@@ -222,6 +222,7 @@ class MoleculeDataset(InMemoryDataset):
                     data.id = torch.tensor([i])
                     data.y = torch.tensor([label])
                     data.type = type_
+                    data.smiles = smi
                     # print(data)
                     data_list.append(data)
                     data_smiles_list.append(smiles_list[i])
