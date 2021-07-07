@@ -54,9 +54,9 @@ class KernelConv(Module):
         angles between each row vectors
         '''
         cos = CosineSimilarity(dim=-1)
-        new_p = torch.roll(p, 1, dims=2)
-#         print(f'p:')
-#         print(p)
+        new_p = torch.roll(p, 1, dims=-2)
+#         print(f'new p:')
+#         print(new_p)
         sc = cos(new_p, p)
 #         print(f'intra angle sc:{sc.shape}')
         return sc
@@ -85,11 +85,15 @@ class KernelConv(Module):
             return torch.full((p_support.shape[0], 1), math.pi / 2)
 #         cos = CosineSimilarity(dim = 1)
 
-        p_neighbor = p_neighbor.unsqueeze(0).expand(p_support.shape)
+        p_neighbor = p_neighbor.unsqueeze(0).unsqueeze(0).expand(
+            p_support.shape[0], p_support.shape[1], p_neighbor.shape[-3], p_neighbor.shape[-2], p_neighbor.shape[-1])
+#         p_neighbor = p_neighbor.unsqueeze(0).expand(p_support.shape)
         intra_p_neighbor_dist = self.intra_angle(p_neighbor)
 #         intra_p_neighbor_dist = intra_p_neighbor_dist.unsqueeze(0).expand(p_support.shape[0], p_neighbor.shape[0],p_neighbor.shape[1])
 #         print(f'intra_p_neighbor_dist:{intra_p_neighbor_dist.shape}')
 
+        p_support = p_support.unsqueeze(2).expand(p_neighbor.shape)
+#         print(f'p_support:{p_support.shape}')
         intra_p_support_dist = self.intra_angle(p_support)
 #         intra_p_support_dist = intra_p_support_dist.unsqueeze(1).expand(p_support.shape[0], p_neighbor.shape[0],p_support.shape[1])
 #         print(f'intra_p_support_dist:{intra_p_support_dist.shape}')
@@ -97,7 +101,7 @@ class KernelConv(Module):
 #         sc = cos(intra_p_neighbor_dist, intra_p_support_dist)
 #         sc = torch.dot(intra_p_neighbor_dist, intra_p_support_dist.T)
         sc = self.arctan_sc(intra_p_neighbor_dist,
-                            intra_p_support_dist, dim=-1)
+                            intra_p_support_dist, dim=(-1, -2))
 #         print(f'angle_sc:{sc}')
         return sc
 
@@ -187,9 +191,9 @@ class KernelConv(Module):
         best_angle_sc, best_angle_sc_index = torch.max(angle_sc, dim=1)
         best_angle_sc_index = best_angle_sc_index.unsqueeze(1)
 
-#         print('angle_sc')
+#         print(f'angle_sc:{angle_sc.shape}')
 #         print(angle_sc)
-#         print('best_angle_sc')
+#         print(f'best_angle_sc:{best_angle_sc.shape}')
 #         print(best_angle_sc.shape)
 #         print('best_angle_sc_index:')
 #         print(best_angle_sc_index.shape)
@@ -413,6 +417,7 @@ class KernelSetConv(Module):
             deg=deg, x=x, p=p, edge_index=edge_index)
 
         num_focal = x_focal.shape[0]
+        print(f'num_focal:{num_focal}')
         if num_focal != 0:
             x_neighbor, p_neighbor, edge_attr_neighbor = self.get_neighbor_nodes_and_edges_of_degree(
                 deg=deg, x=x, edge_index=edge_index, p=p, edge_attr=edge_attr)
@@ -490,7 +495,7 @@ class KernelSetConv(Module):
 
 
 class KernelLayer(Module):
-    def __init__(self, x_dim, p_dim, edge_dim, out_dim, ):
+    def __init__(self, x_dim, p_dim, edge_dim, out_dim):
         '''
         a wrapper of KernelSetConv for clear input/output dimension
         inputs:
@@ -503,7 +508,3 @@ class KernelLayer(Module):
 
     def forward(self, data):
         return self.conv(data=data)
-
-
-if __name__ == '__main__':
-    print('testing')
