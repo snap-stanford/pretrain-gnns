@@ -11,7 +11,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
 
-from model import GNN, GNN_graphpred
+from model import MolGCN, GNN_graphpred
 from sklearn.metrics import roc_auc_score
 
 from splitters import scaffold_split
@@ -196,8 +196,8 @@ def main():
                              shuffle=False, num_workers=args.num_workers)
     print('data loaded!')
     # set up model
-    model = GNN_graphpred(args.num_layer, args.emb_dim, num_tasks, JK=args.JK,
-                          drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling, gnn_type=args.gnn_type)
+    model = GNN_graphpred(num_layers=5, num_kernel_layers=100, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK,
+                          drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling)
 
     for param in model.state_dict():
         print(param)

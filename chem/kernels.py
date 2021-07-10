@@ -294,7 +294,7 @@ class KernelSetConv(Module):
 
 # test of std kernel
         p_support = torch.tensor([[1.2990e+00,  7.5000e-01]]).unsqueeze(0)
-        print(p_support)
+        # print(p_support)
 
         x_center = torch.tensor([[16, 32.067, 1.8, 2, 6]]).unsqueeze(0)
 
@@ -309,7 +309,7 @@ class KernelSetConv(Module):
         p_support = torch.tensor([[1.2990e+00,  7.5000e-01],
                                   [-1.2990e+00,  7.5000e-01],
                                   [-2.7756e-16, -1.5000e+00]]).unsqueeze(0)
-        print(p_support)
+        # print(p_support)
 
         x_support = torch.tensor([[16, 32.067, 1.8, 2, 6],
                                   [6.0000, 12.0110,  1.7000,  4.0000,  4.0000],
@@ -346,6 +346,7 @@ class KernelSetConv(Module):
 #             ])
 
     def get_degree_index(self, x, edge_index):
+        # print(f'edge_index:{edge_index.shape}, x:{x.shape}')
         deg = degree(edge_index[0], x.shape[0])
         return deg
 
@@ -444,7 +445,7 @@ class KernelSetConv(Module):
             deg=deg, x=x, p=p, edge_index=edge_index)
 
         num_focal = x_focal.shape[0]
-        print(f'num_focal:{num_focal}')
+        # print(f'num_focal:{num_focal}')
         if num_focal != 0:
             x_neighbor, p_neighbor, edge_attr_neighbor = self.get_neighbor_nodes_and_edges_of_degree(
                 deg=deg, x=x, edge_index=edge_index, p=p, edge_attr=edge_attr)
@@ -500,7 +501,7 @@ class KernelSetConv(Module):
         sc_list = []
         index_list = []
         for deg in range(1, 5):
-            print(f'deg:{deg}')
+            # print(f'deg:{deg}')
             receptive_field = self.convert_graph_to_receptive_field(
                 deg, x, p, edge_index, edge_attr)
 #             print('receptive_field')
@@ -541,13 +542,13 @@ class KernelSetConv(Module):
                 pass
 
         sc_list = torch.cat(sc_list, dim=1)
-        print(index_list)
+        # print(index_list)
         index_list = torch.cat(index_list)
 #         print(f'sc_list:{sc_list}')
         new_index = self.get_reorder_index(index_list)
         sc_list = sc_list[:, new_index, :]
         sc_list = self.format_output(sc_list)
-        print(sc_list.shape)
+        # print(sc_list.shape)
 
         return sc_list
 
