@@ -40,10 +40,7 @@ class MolGCN(MessagePassing):
             edge_index = kwargv['edge_index']
             edge_attr = kwargv['edge_attr']
             p = kwargv['p']
-            data.x = x
-            data.edge_index = edge_index
-            data.edge_attr = edge_attr
-            data.p = p
+            data = Data(x = x, p=p, edge_index = edge_index, edge_attr = edge_attr)
 
         h = x
 
@@ -132,7 +129,7 @@ class GNN_graphpred(torch.nn.Module):
         self.gnn.load_state_dict(torch.load(model_file))
 
     def forward(self, *argv):
-        if len(argv) == 4:
+        if len(argv) == 5:
             x, p, edge_index, edge_attr, batch = argv[0], argv[1], argv[2], argv[3], argv[4]
         elif len(argv) == 1:
             data = argv[0]
@@ -141,8 +138,8 @@ class GNN_graphpred(torch.nn.Module):
             raise ValueError("unmatched number of arguments.")
 
         node_representation = self.gnn(x= x, edge_index = edge_index, edge_attr = edge_attr, p = p)
-
-        return self.graph_pred_linear(self.pool(node_representation, batch))
+        graph_representation = self.pool(node_representation, batch)
+        return self.graph_pred_linear(graph_representation),  graph_representation
 
 
 
@@ -164,7 +161,7 @@ if __name__ == "__main__":
 
 
     for batch in tqdm(loader):
-        print(f'batch:{batch}')
+        # print(f'batch:{batch}')
         out = model(batch)
         print(out)
 

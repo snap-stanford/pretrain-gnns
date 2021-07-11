@@ -14,7 +14,7 @@ import numpy as np
 from model import MolGCN, GNN_graphpred
 from sklearn.metrics import roc_auc_score
 
-from splitters import scaffold_split
+from splitters import scaffold_split, random_split
 import pandas as pd
 
 import os
@@ -29,8 +29,15 @@ def train(args, model, device, loader, optimizer):
     model.train()
 
     for step, batch in enumerate(tqdm(loader, desc="Iteration")):
-        batch = batch.to(device)
-        pred, h = model(batch.x, batch.edge_index,
+        # batch = batch.to(device)
+        print(f'device:{device}')
+        batch.x = batch.x.to(device)
+        batch.p = batch.p.to(device)
+        batch.edge_index = batch.edge_index.to(device)
+        batch.edge_attr = batch.edge_attr.to(device)
+        batch.batch = batch.batch.to(device)
+        # print(f'model device cuda:{next(model.parameters()).is_cuda}, batch{batch.device}')
+        pred, h = model(batch.x, batch.p, batch.edge_index,
                         batch.edge_attr, batch.batch)
         y = batch.y.view(pred.shape).to(torch.float64)
 
@@ -182,6 +189,9 @@ def main():
         train_dataset, valid_dataset, test_dataset = random_scaffold_split(
             dataset, smiles_list, null_value=0, frac_train=0.8, frac_valid=0.1, frac_test=0.1, seed=args.seed)
         print("random scaffold")
+    elif args.split == 'lit-pcba':
+        # train_dataset
+        pass
     else:
         raise ValueError("Invalid split option.")
 
@@ -199,12 +209,13 @@ def main():
     model = GNN_graphpred(num_layers=5, num_kernel_layers=100, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK,
                           drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling)
 
-    for param in model.state_dict():
-        print(param)
+    # for param in model.state_dict():
+    #     print(param)
     if not args.input_model_file == "":
         model.from_pretrained(args.input_model_file)
 
-    model.to(device)
+    model = model.to(device)
+    print(f'model device cuda:{next(model.parameters()).is_cuda}')
 
     # set up optimizer
     # different learning rate for different part of GNN
