@@ -21,7 +21,7 @@ class KernelConv(Module):
                 raise Exception(
                     'either numer of kernels L, convolution dimention D, number of support num_supports or feature dimension node_attr_dim is not specified')
             else:
-                init_kernel = Data(x_center=torch.randn(L, 1, node_attr_dim),  x_support=torch.randn(
+                init_kernel = Data(x_center=torch.randn(L, 1, node_attr_dim), x_support=torch.randn(
                     L, num_supports, node_attr_dim), edge_attr_support=torch.randn(L, num_supports, edge_attr_dim), p_support=torch.randn(L, num_supports, D))
 
         x_center_tensor = init_kernel.x_center
@@ -78,7 +78,7 @@ class KernelConv(Module):
         #         print(f'p_support:{p_support.shape}')
         #         print(p_support.shape)
         if(p_support.shape[-2] == 1):
-            return torch.full((p_support.shape[0], p_neighbor.shape[0]), math.pi / 2)
+            return torch.full((p_support.shape[0], p_neighbor.shape[0]), math.pi / 2, device=p_neighbor.device)
 #         cos = CosineSimilarity(dim = 1)
 
         p_neighbor = p_neighbor.unsqueeze(0).unsqueeze(0).expand(
@@ -242,8 +242,8 @@ class KernelConv(Module):
 #         edge_attr_support_sc = edge_attr_support_sc
 
         # the maxium value a arctain function can get
-        max_atan = torch.tensor([math.pi / 2])
-        one = torch.tensor([1])
+        max_atan = torch.tensor([math.pi / 2], device=p_neighbor.device)
+        one = torch.tensor([1], device=p_neighbor.device)
 
         sc = torch.atan(1 /
                         (torch.square(length_sc - max_atan) +
@@ -293,30 +293,30 @@ class KernelSetConv(Module):
         self.L = L
 
 # test of std kernel
-        p_support = torch.tensor([[1.2990e+00,  7.5000e-01]]).unsqueeze(0)
+        p_support = torch.tensor([[1.2990e+00, 7.5000e-01]]).unsqueeze(0)
         # print(p_support)
 
         x_center = torch.tensor([[16, 32.067, 1.8, 2, 6]]).unsqueeze(0)
 
         x_support = torch.tensor(
-            [[6.0000, 12.0110,  1.7000,  4.0000,  4.0000]]).unsqueeze(0)
+            [[6.0000, 12.0110, 1.7000, 4.0000, 4.0000]]).unsqueeze(0)
 
         edge_attr_support = torch.tensor([[2]], dtype=torch.float).unsqueeze(0)
 
         kernel1_std = Data(p_support=p_support, x_support=x_support,
                            x_center=x_center, edge_attr_support=edge_attr_support)
 
-        p_support = torch.tensor([[1.2990e+00,  7.5000e-01],
-                                  [-1.2990e+00,  7.5000e-01],
+        p_support = torch.tensor([[1.2990e+00, 7.5000e-01],
+                                  [-1.2990e+00, 7.5000e-01],
                                   [-2.7756e-16, -1.5000e+00]]).unsqueeze(0)
         # print(p_support)
 
         x_support = torch.tensor([[16, 32.067, 1.8, 2, 6],
-                                  [6.0000, 12.0110,  1.7000,  4.0000,  4.0000],
-                                  [1.0000,  1.0080,  1.2000,  1.0000,  1.0000]]).unsqueeze(0)
+                                  [6.0000, 12.0110, 1.7000, 4.0000, 4.0000],
+                                  [1.0000, 1.0080, 1.2000, 1.0000, 1.0000]]).unsqueeze(0)
 
         x_center = torch.tensor(
-            [[6.0000, 12.0110,  1.7000,  4.0000,  4.0000]]).unsqueeze(0)
+            [[6.0000, 12.0110, 1.7000, 4.0000, 4.0000]]).unsqueeze(0)
 
         edge_attr_support = torch.tensor(
             [[2], [1], [1]], dtype=torch.float).unsqueeze(0)
@@ -384,7 +384,7 @@ class KernelSetConv(Module):
         # normalize bond id
         e = (d / 2).long()
 #         bond_id = torch.cat([torch.stack((2*x, 2*x+1)) for x in e])
-        bond_id = torch.tensor([2 * x for x in e])
+        bond_id = torch.tensor([2 * x for x in e], device=a.device)
 #         print('bond_id')
 #         print(bond_id)
 
@@ -508,7 +508,7 @@ class KernelSetConv(Module):
 #             print(receptive_field)
             if receptive_field is not None:
                 x_focal, p_focal, x_neighbor, p_neighbor, edge_attr_neighbor, selected_index = receptive_field[
-                    0], receptive_field[1], receptive_field[2], receptive_field[3], receptive_field[4],  receptive_field[5]
+                    0], receptive_field[1], receptive_field[2], receptive_field[3], receptive_field[4], receptive_field[5]
                 data = Data(x_focal=x_focal, p_focal=p_focal, x_neighbor=x_neighbor,
                             p_neighbor=p_neighbor, edge_attr_neighbor=edge_attr_neighbor)
 
@@ -525,8 +525,8 @@ class KernelSetConv(Module):
 #             print('edge_attr_neighbor')
 #             print(edge_attr_neighbor)
                 sc = self.kernel_set[deg - 1](data=data)
-#                 print(f'sc.shape:{sc.shape}')
-                zeros = torch.zeros(self.L, x_focal.shape[0], 4)
+                zeros = torch.zeros(
+                    self.L, x_focal.shape[0], 4, device=sc.device)
                 zeros[:, :, deg - 1] = sc
                 sc = zeros
 #                 print(f'sc:{sc.shape}')
@@ -548,7 +548,6 @@ class KernelSetConv(Module):
         new_index = self.get_reorder_index(index_list)
         sc_list = sc_list[:, new_index, :]
         sc_list = self.format_output(sc_list)
-        # print(sc_list.shape)
 
         return sc_list
 

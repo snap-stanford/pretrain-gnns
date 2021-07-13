@@ -36,7 +36,14 @@ def train(args, model, device, loader, optimizer):
         batch.edge_index = batch.edge_index.to(device)
         batch.edge_attr = batch.edge_attr.to(device)
         batch.batch = batch.batch.to(device)
-        # print(f'model device cuda:{next(model.parameters()).is_cuda}, batch{batch.device}')
+        model.to(device)
+        print(f'batch.x:{batch.x}')
+        print(f'batch.p:{batch.p}')
+        print(f'batch.edge_index:{batch.edge_index}')
+        print(f'batch.edge_attr:{batch.edge_attr}')
+        print(f'batch:{batch.batch}')
+        batch = batch.to(device)
+        print(f'model device cuda: {next(model.parameters()).is_cuda}')
         pred, h = model(batch.x, batch.p, batch.edge_index,
                         batch.edge_attr, batch.batch)
         y = batch.y.view(pred.shape).to(torch.float64)
@@ -169,9 +176,10 @@ def main():
     # set up dataset
     # MoleculeDataset("dataset/" + args.dataset, dataset=args.dataset)
     dataset = MoleculeDataset(
-        "D:/Documents/JupyterNotebook/Hit_Explosion/data/lit-pcba/VAE/" + args.dataset.upper(), dataset=args.dataset)
+        D=2, root='~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2', dataset='adrb2_vae')
 
     print(dataset)
+    # dataset = dataset[:1000]
 
     if args.split == "scaffold":
         smiles_list = pd.read_csv(

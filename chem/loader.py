@@ -444,7 +444,7 @@ class MoleculeFingerprintDataset(data.Dataset):
 if __name__ == "__main__":
     print('testing...')
     a = MoleculeDataset(
-        D=2, root='D:/Documents/JupyterNotebook/Hit_Explosion/data/lit-pcba/VAE/ADRB2', dataset='adrb2_vae')
+        D=2, root='~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2', dataset='adrb2_vae')
     print(a[0])
 
     data = a[0]
