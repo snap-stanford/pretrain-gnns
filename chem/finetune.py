@@ -170,13 +170,22 @@ def main():
         num_tasks = 2
     elif args.dataset == "adrb2":
         num_tasks = 1
+    elif args.dataset == '435008':
+        num_tasks = 1
     else:
         raise ValueError("Invalid dataset name.")
 
     # set up dataset
-    # MoleculeDataset("dataset/" + args.dataset, dataset=args.dataset)
-    dataset = MoleculeDataset(
-        D=2, root='~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2', dataset='adrb2_vae')
+    # windows
+    root = 'D:/Documents/JupyterNotebook/GCN_property/pretrain-gnns/chem/dataset/'
+    # linux
+    # root = '~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2'
+    if args.dataset == '435008':
+        root = root + 'qsar_benchmark2015'
+        dataset = dataset
+    else:
+        raise Exception('cannot find dataset')
+    data = MoleculeDataset(D=2, root=root, dataset=dataset)
 
     print(dataset)
     # dataset = dataset[:1000]
