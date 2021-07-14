@@ -81,9 +81,18 @@ def smiles2graph(D, smiles):
     if D == None:
         raise Exception(
             'smiles2grpah() needs to input D to specifiy 2D or 3D graph generation.')
-
-    mol = Chem.MolFromSmiles(smiles)
-    mol = Chem.AddHs(mol)
+    # print(f'smiles:{smiles}')
+    # default RDKit behavior is to reject hypervalent P, so you need to set sanitize=False. Search keyword = 'Explicit Valence Error - Partial Sanitization' on https://www.rdkit.org/docs/Cookbook.html for more info
+    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+    if mol is None:
+        # raise Exception(f'mol is None. smiles:{smiles}')
+        print(f'mol is None. smiles:{smiles}')
+        return None
+    try:
+        mol.UpdatePropertyCache(strict=False)
+        mol = Chem.AddHs(mol)
+    except Exception as e:
+        print(f'{e}, smiles:{smiles}')
 
     if D == 2:
         Chem.rdDepictor.Compute2DCoords(mol)
@@ -226,6 +235,26 @@ class MoleculeDataset(InMemoryDataset):
                     # print(data)
                     data_list.append(data)
                     data_smiles_list.append(smiles_list[i])
+        elif self.dataset == '435008':
+            for file, label in [(f'{self.dataset}_actives.smi', 1),
+                                (f'{self.dataset}_inactives.smi', 0)]:
+                smiles_path = os.path.join(self.root, 'raw', file)
+                smiles_list = pd.read_csv(
+                    smiles_path, sep='\t', header=None)[0]
+
+                for i in tqdm(range(len(smiles_list)), desc=f'{file}'):
+                    smi = smiles_list[i]
+
+                    data = smiles2graph(2, smi)
+                    if data is None:
+                        continue
+                    data.id = torch.tensor([i])
+                    data.y = torch.tensor([label])
+                    data.smiles = smi
+                    # print(data)
+                    data_list.append(data)
+                    data_smiles_list.append(smiles_list[i])
+
         else:
             raise ValueError('Invalid dataset name')
 
@@ -443,11 +472,20 @@ class MoleculeFingerprintDataset(data.Dataset):
 # test MoleculeDataset object
 if __name__ == "__main__":
     print('testing...')
-    a = MoleculeDataset(
-        D=2, root='~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2', dataset='adrb2_vae')
-    print(a[0])
+    dataset = '435008'
+    # windows
+    root = 'D:/Documents/JupyterNotebook/GCN_property/pretrain-gnns/chem/dataset/'
+    # linux
+    # root = '~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2'
+    if dataset == '435008':
+        root += 'qsar_benchmark2015'
+        dataset = dataset
+    else:
+        raise Exception('cannot find dataset')
+    dataset = MoleculeDataset(D=2, root=root, dataset=dataset)
+    print(dataset[0])
 
-    data = a[0]
+    data = dataset[0]
     print(data.x)
     print(data.p)
     print(data.edge_index)
