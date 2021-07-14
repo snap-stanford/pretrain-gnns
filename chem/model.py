@@ -41,7 +41,7 @@ class MolGCN(MessagePassing):
             edge_attr = kwargv['edge_attr']
             p = kwargv['p']
             data = Data(x = x, p=p, edge_index = edge_index, edge_attr = edge_attr)
-            print(f'foward: data.x{data.x}')
+            # print(f'foward: data.x{data.x}')
 
         h = x
 
@@ -51,7 +51,7 @@ class MolGCN(MessagePassing):
 
             kernel_layer = self.layers[i]
             sim_sc = kernel_layer(data = data)
-            print(f'edge_index:{edge_index.device}, sim_sc:{sim_sc.device}')
+            # print(f'edge_index:{edge_index.device}, sim_sc:{sim_sc.device}')
             # print('sim_sc')
             # print(sim_sc)
             h = self.propagate(edge_index = edge_index, sim_sc = sim_sc)

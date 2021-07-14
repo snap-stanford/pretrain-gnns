@@ -277,7 +277,7 @@ class KernelConv(Module):
             x_focal, p_focal, x_neighbor, p_neighbor, edge_attr_neighbor)
 
 
-#         print('\n')
+        # print('\n')
 #         print(f'len sc:{length_sc.shape}')
 #         print(f'angle sc:{angle_sc.shape}')
 #         print(f'support attribute_sc:{supp_attr_sc.shape}')
