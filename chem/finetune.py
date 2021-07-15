@@ -23,6 +23,7 @@ import shutil
 from tensorboardX import SummaryWriter
 
 criterion = nn.BCEWithLogitsLoss(reduction="none")
+criterion = nn.BCELoss()
 
 
 def train(args, model, device, loader, optimizer):
@@ -30,20 +31,14 @@ def train(args, model, device, loader, optimizer):
 
     for step, batch in enumerate(tqdm(loader, desc="Iteration")):
         # batch = batch.to(device)
-        print(f'device:{device}')
-        batch.x = batch.x.to(device)
-        batch.p = batch.p.to(device)
-        batch.edge_index = batch.edge_index.to(device)
-        batch.edge_attr = batch.edge_attr.to(device)
+        # batch.x = batch.x.to(device)
+        # batch.p = batch.p.to(device)
+        # batch.edge_index = batch.edge_index.to(device)
+        # batch.edge_attr = batch.edge_attr.to(device)
         batch.batch = batch.batch.to(device)
-        model.to(device)
-        print(f'batch.x:{batch.x}')
-        print(f'batch.p:{batch.p}')
-        print(f'batch.edge_index:{batch.edge_index}')
-        print(f'batch.edge_attr:{batch.edge_attr}')
-        print(f'batch:{batch.batch}')
+
         batch = batch.to(device)
-        print(f'model device cuda: {next(model.parameters()).is_cuda}')
+
         pred, h = model(batch.x, batch.p, batch.edge_index,
                         batch.edge_attr, batch.batch)
         y = batch.y.view(pred.shape).to(torch.float64)
@@ -182,13 +177,13 @@ def main():
     # root = '~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2'
     if args.dataset == '435008':
         root = root + 'qsar_benchmark2015'
-        dataset = dataset
+        dataset = args.dataset
     else:
         raise Exception('cannot find dataset')
-    data = MoleculeDataset(D=2, root=root, dataset=dataset)
-
+    dataset = MoleculeDataset(D=2, root=root, dataset=dataset)
+    index = list(range(30)) + list(range(1000, 1030))
+    dataset = dataset[index]
     print(dataset)
-    # dataset = dataset[:1000]
 
     if args.split == "scaffold":
         smiles_list = pd.read_csv(
@@ -212,7 +207,12 @@ def main():
     else:
         raise ValueError("Invalid split option.")
 
-    print(train_dataset[0])
+    print(
+        f'training size: {len(train_dataset)}, actives: {len(torch.nonzero(torch.tensor([data.y for data in train_dataset])))}')
+    print(
+        f'valid size: {len(valid_dataset)}, actives: {len(torch.nonzero(torch.tensor([data.y for data in valid_dataset])))}')
+    print(
+        f'test size: {len(test_dataset)}, actives: {len(torch.nonzero(torch.tensor([data.y for data in test_dataset])))}')
 
     print('loading data')
     train_loader = DataLoader(
@@ -223,16 +223,15 @@ def main():
                              shuffle=False, num_workers=args.num_workers)
     print('data loaded!')
     # set up model
-    model = GNN_graphpred(num_layers=5, num_kernel_layers=100, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK,
+    model = GNN_graphpred(num_layers=5, num_kernel_layers=10, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK,
                           drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling)
 
-    # for param in model.state_dict():
-    #     print(param)
+    print(f'num params:{len(list(model.parameters()))}')
     if not args.input_model_file == "":
         model.from_pretrained(args.input_model_file)
 
     model = model.to(device)
-    print(f'model device cuda:{next(model.parameters()).is_cuda}')
+    # print(f'model device cuda:{next(model.parameters()).is_cuda}')
 
     # set up optimizer
     # different learning rate for different part of GNN
@@ -245,7 +244,7 @@ def main():
         {"params": model.graph_pred_linear.parameters(), "lr": args.lr * args.lr_scale})
     optimizer = optim.Adam(model_param_group, lr=args.lr,
                            weight_decay=args.decay)
-    print(optimizer)
+    # print(optimizer)
 
     train_acc_list = []
     val_acc_list = []
