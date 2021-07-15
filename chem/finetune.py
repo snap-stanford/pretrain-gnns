@@ -44,12 +44,14 @@ def train(args, model, device, loader, optimizer):
         y = batch.y.view(pred.shape).to(torch.float64)
 
         # Whether y is non-null or not.
-        is_valid = y**2 > 0
+        # is_valid = y**2 > 0
         # Loss matrix
-        loss_mat = criterion(pred.double(), (y + 1) / 2)
+        loss = criterion(pred.double(), y)
+        print(f'loss:{loss}')
+        # loss_mat = criterion(pred.double(), (y + 1) / 2)
         # loss matrix after removing null target
-        loss_mat = torch.where(is_valid, loss_mat, torch.zeros(
-            loss_mat.shape).to(loss_mat.device).to(loss_mat.dtype))
+        # loss_mat = torch.where(is_valid, loss_mat, torch.zeros(
+        #     loss_mat.shape).to(loss_mat.device).to(loss_mat.dtype))
 
         optimizer.zero_grad()
         loss = torch.sum(loss_mat) / torch.sum(is_valid)
@@ -67,22 +69,28 @@ def eval(args, model, device, loader):
         batch = batch.to(device)
 
         with torch.no_grad():
-            pred = model(batch.x, batch.edge_index,
-                         batch.edge_attr, batch.batch)
+            pred, h = model(batch.x, batch.p, batch.edge_index,
+                            batch.edge_attr, batch.batch)
 
         y_true.append(batch.y.view(pred.shape))
+        # print(f'y_true:{y_true}')
+
         y_scores.append(pred)
+        # print(f'y_scores:{y_scores}')
 
     y_true = torch.cat(y_true, dim=0).cpu().numpy()
     y_scores = torch.cat(y_scores, dim=0).cpu().numpy()
 
     roc_list = []
+
     for i in range(y_true.shape[1]):
-        # AUC is only defined when there is at least one positive data.
-        if np.sum(y_true[:, i] == 1) > 0 and np.sum(y_true[:, i] == -1) > 0:
-            is_valid = y_true[:, i]**2 > 0
-            roc_list.append(roc_auc_score(
-                (y_true[is_valid, i] + 1) / 2, y_scores[is_valid, i]))
+        roc_list.append(roc_auc_score(y_true[:, i], y_scores[:, i]))
+    # for i in range(y_true.shape[1]):
+    #     # AUC is only defined when there is at least one positive data.
+    #     if np.sum(y_true[:, i] == 1) > 0 and np.sum(y_true[:, i] == -1) > 0:
+    #         is_valid = y_true[:, i]**2 > 0
+    #         roc_list.append(roc_auc_score(
+    #             (y_true[is_valid, i] + 1) / 2, y_scores[is_valid, i]))
 
     if len(roc_list) < y_true.shape[1]:
         print("Some target is missing!")
@@ -172,16 +180,16 @@ def main():
 
     # set up dataset
     # windows
-    root = 'D:/Documents/JupyterNotebook/GCN_property/pretrain-gnns/chem/dataset/'
+    # root = 'D:/Documents/JupyterNotebook/GCN_property/pretrain-gnns/chem/dataset/'
     # linux
-    # root = '~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2'
+    root = '~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/'
     if args.dataset == '435008':
         root = root + 'qsar_benchmark2015'
         dataset = args.dataset
     else:
         raise Exception('cannot find dataset')
     dataset = MoleculeDataset(D=2, root=root, dataset=dataset)
-    index = list(range(30)) + list(range(1000, 1030))
+    index = list(range(400)) + list(range(1000, 1400))
     dataset = dataset[index]
     print(dataset)
 
@@ -219,7 +227,7 @@ def main():
         train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(valid_dataset, batch_size=args.batch_size,
                             shuffle=False, num_workers=args.num_workers)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
+    test_loader = DataLoader(test_dataset, batch_size=len(test_dataset),  # args.batch_size,
                              shuffle=False, num_workers=args.num_workers)
     print('data loaded!')
     # set up model

@@ -44,7 +44,7 @@ def lookup_from_rdkit(elements):
             valence = pt.GetDefaultValence(elem)
             outer_elec = pt.GetNOuterElecs(elem)
 
-            elem_rep = [num, w,  Rvdw, valence, outer_elec]
+            elem_rep = [num, w, Rvdw, valence, outer_elec]
 #             print(elem_rep)
 
             elem_rep_lookup.append(elem_rep)
@@ -83,7 +83,10 @@ def smiles2graph(D, smiles):
             'smiles2grpah() needs to input D to specifiy 2D or 3D graph generation.')
     # print(f'smiles:{smiles}')
     # default RDKit behavior is to reject hypervalent P, so you need to set sanitize=False. Search keyword = 'Explicit Valence Error - Partial Sanitization' on https://www.rdkit.org/docs/Cookbook.html for more info
-    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+    try:
+        mol = Chem.MolFromSmiles(smiles, sanitize=False)
+    except Exception as e:
+        print(f'{e}, smiles:{smiles}')
     if mol is None:
         # raise Exception(f'mol is None. smiles:{smiles}')
         print(f'mol is None. smiles:{smiles}')
@@ -474,9 +477,9 @@ if __name__ == "__main__":
     print('testing...')
     dataset = '435008'
     # windows
-    root = 'D:/Documents/JupyterNotebook/GCN_property/pretrain-gnns/chem/dataset/'
+    # root = 'D:/Documents/JupyterNotebook/GCN_property/pretrain-gnns/chem/dataset/'
     # linux
-    # root = '~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/lit-pcba/AVE/ADRB2'
+    root = '~/projects/GCN_Syn/examples/pretrain-gnns/chem/dataset/'
     if dataset == '435008':
         root += 'qsar_benchmark2015'
         dataset = dataset

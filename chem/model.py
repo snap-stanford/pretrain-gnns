@@ -141,7 +141,10 @@ class GNN_graphpred(torch.nn.Module):
 
         node_representation = self.gnn(x= x, edge_index = edge_index, edge_attr = edge_attr, p = p)
         graph_representation = self.pool(node_representation, batch)
-        return self.graph_pred_linear(graph_representation),  graph_representation
+        pred = self.graph_pred_linear(graph_representation)
+        # print(f'graph_rep:{graph_representation}')
+        # print(f'pred:{pred}')
+        return pred,  graph_representation
 
 
 
