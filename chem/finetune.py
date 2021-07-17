@@ -29,6 +29,7 @@ criterion = nn.BCELoss()
 def train(args, model, device, loader, optimizer):
     model.train()
 
+    loss_lst = []
     for step, batch in enumerate(tqdm(loader, desc="Iteration")):
         # batch = batch.to(device)
         # batch.x = batch.x.to(device)
@@ -47,17 +48,19 @@ def train(args, model, device, loader, optimizer):
         # is_valid = y**2 > 0
         # Loss matrix
         loss = criterion(pred.double(), y)
-        print(f'loss:{loss}')
+        # print(f'loss:{loss}')
         # loss_mat = criterion(pred.double(), (y + 1) / 2)
         # loss matrix after removing null target
         # loss_mat = torch.where(is_valid, loss_mat, torch.zeros(
         #     loss_mat.shape).to(loss_mat.device).to(loss_mat.dtype))
-
+        loss_lst.append(loss)
         optimizer.zero_grad()
-        loss = torch.sum(loss_mat) / torch.sum(is_valid)
+        # loss = torch.sum(loss_mat) / torch.sum(is_valid)
         loss.backward()
 
         optimizer.step()
+    batch_loss = sum(loss_lst) / float(len(loader))
+    print(f'loss:{batch_loss}')
 
 
 def eval(args, model, device, loader):
@@ -231,7 +234,7 @@ def main():
                              shuffle=False, num_workers=args.num_workers)
     print('data loaded!')
     # set up model
-    model = GNN_graphpred(num_layers=5, num_kernel_layers=10, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK,
+    model = GNN_graphpred(num_layers=4, num_kernel_layers=20, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK,
                           drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling)
 
     print(f'num params:{len(list(model.parameters()))}')
