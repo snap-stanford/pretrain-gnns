@@ -83,6 +83,8 @@ def smiles2graph(D, smiles):
             'smiles2grpah() needs to input D to specifiy 2D or 3D graph generation.')
     # print(f'smiles:{smiles}')
     # default RDKit behavior is to reject hypervalent P, so you need to set sanitize=False. Search keyword = 'Explicit Valence Error - Partial Sanitization' on https://www.rdkit.org/docs/Cookbook.html for more info
+    smiles = smiles.replace(r'/=', '=')
+    smiles = smiles.replace(r'\=', '=')
     try:
         mol = Chem.MolFromSmiles(smiles, sanitize=False)
     except Exception as e:
