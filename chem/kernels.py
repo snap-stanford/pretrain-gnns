@@ -276,7 +276,6 @@ class KernelConv(Module):
         sc, length_sc, angle_sc, supp_attr_sc, center_attr_sc, edge_attr_support_sc = self.calculate_total_score(
             x_focal, p_focal, x_neighbor, p_neighbor, edge_attr_neighbor)
 
-
         # print('\n')
 #         print(f'len sc:{length_sc.shape}')
 #         print(f'angle sc:{angle_sc.shape}')
@@ -525,8 +524,7 @@ class KernelSetConv(Module):
 #             print('edge_attr_neighbor')
 #             print(edge_attr_neighbor)
                 sc = self.kernel_set[deg - 1](data=data)
-                zeros = torch.zeros(
-                    self.L, x_focal.shape[0], 4, device=sc.device)
+                zeros = torch.zeros(self.L, x_focal.shape[0], 4, device=sc.device)#, requires_grad=False)
                 zeros[:, :, deg - 1] = sc
                 sc = zeros
 #                 print(f'sc:{sc.shape}')
