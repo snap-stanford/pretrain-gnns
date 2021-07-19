@@ -26,8 +26,8 @@ from model import MolGCN, GNN_graphpred
 from evaluation import enrichment
 from util import print_model_size
 
-criterion = nn.BCEWithLogitsLoss(reduction="none")
-criterion = nn.BCELoss()
+criterion = nn.BCEWithLogitsLoss()
+# criterion = nn.BCELoss()
 
 
 def train(args, model, device, loader, optimizer):
@@ -51,16 +51,18 @@ def train(args, model, device, loader, optimizer):
         # Whether y is non-null or not.
         # is_valid = y**2 > 0
         # Loss matrix
+        # print(f"pred:{pred.double()}, y:{y}")
         loss = criterion(pred.double(), y)
-        # print(f'loss:{loss}')
         # loss_mat = criterion(pred.double(), (y + 1) / 2)
         # loss matrix after removing null target
         # loss_mat = torch.where(is_valid, loss_mat, torch.zeros(
         #     loss_mat.shape).to(loss_mat.device).to(loss_mat.dtype))
+        # print(f'loss:{loss}')
         loss_lst.append(loss)
         optimizer.zero_grad()
         # loss = torch.sum(loss_mat) / torch.sum(is_valid)
         loss.backward()
+        torch.cuda.empty_cache()
 
         optimizer.step()
     batch_loss = sum(loss_lst) / float(len(loader))
@@ -114,7 +116,7 @@ def main():
 
     # task = Task.init(project_name="kernel GNN", task_name="out-of-memory")
 
-# Training settings
+    # Training settings
     parser = argparse.ArgumentParser(
         description='PyTorch implementation of pre-training of graph neural networks')
     parser.add_argument('--device', type=int, default=0,
@@ -160,8 +162,7 @@ def main():
 
     torch.manual_seed(args.runseed)
     np.random.seed(args.runseed)
-    device = torch.device("cuda:" + str(args.device)
-                          ) if torch.cuda.is_available() else torch.device("cpu")
+    device = torch.device("cuda:" + str(args.device)) if torch.cuda.is_available() else torch.device("cpu")
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.runseed)
 
@@ -245,7 +246,7 @@ def main():
         test_dataset), shuffle=False, num_workers=args.num_workers)
     print('data loaded!')
     # set up model
-    model = GNN_graphpred(num_layers=1, num_kernel_layers=5, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK, drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling)
+    model = GNN_graphpred(num_layers=4, num_kernel_layers=15, x_dim=5, p_dim=3, edge_attr_dim=1, num_tasks=num_tasks, JK=args.JK, drop_ratio=args.dropout_ratio, graph_pooling=args.graph_pooling)
     # check model size
     print_model_size(model)
 
@@ -260,12 +261,9 @@ def main():
     model_param_group = []
     model_param_group.append({"params": model.gnn.parameters()})
     if args.graph_pooling == "attention":
-        model_param_group.append(
-            {"params": model.pool.parameters(), "lr": args.lr * args.lr_scale})
-    model_param_group.append(
-        {"params": model.graph_pred_linear.parameters(), "lr": args.lr * args.lr_scale})
-    optimizer = optim.Adam(model_param_group, lr=args.lr,
-                           weight_decay=args.decay)
+        model_param_group.append({"params": model.pool.parameters(), "lr": args.lr * args.lr_scale})
+    model_param_group.append({"params": model.graph_pred_linear.parameters(), "lr": args.lr * args.lr_scale})
+    optimizer = optim.Adam(model_param_group, lr=args.lr, weight_decay=args.decay)
     # print(optimizer)
 
     train_acc_list = []

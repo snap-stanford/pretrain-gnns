@@ -154,6 +154,10 @@ def smiles2graph(D, smiles):
     return data
 
 
+# def mol2graph(mol):
+    
+
+
 class MoleculeDataset(InMemoryDataset):
     def __init__(self,
                  root,
@@ -282,43 +286,81 @@ class MoleculeDataset(InMemoryDataset):
 # is pcba_pretrain
 
 
-def merge_dataset_objs(dataset_1, dataset_2):
-    """
-    Naively merge 2 molecule dataset objects, and ignore identities of
-    molecules. Assumes both datasets have multiple y labels, and will pad
-    accordingly. ie if dataset_1 has obj_1 with y dim 1310 and dataset_2 has
-    obj_2 with y dim 128, then the resulting obj_1 and obj_2 will have dim
-    1438, where obj_1 have the last 128 cols with 0, and obj_2 have
-    the first 1310 cols with 0.
-    :return: pytorch geometric dataset obj, with the x, edge_attr, edge_index,
-    new y attributes only
-    """
-    d_1_y_dim = dataset_1[0].y.size()[0]
-    d_2_y_dim = dataset_2[0].y.size()[0]
+class SDFBenchmakr2015(InMemoryDataset):
+    def __init__(self,
+                 root,
+                 D=3,
+                 transform=None,
+                 pre_transform=None,
+                 pre_filter=None,
+                 dataset='435008',
+                 empty=False):
 
-    data_list = []
-    # keep only x, edge_attr, edge_index, padded_y then append
-    for d in dataset_1:
-        old_y = d.y
-        new_y = torch.cat([old_y, torch.zeros(d_2_y_dim, dtype=torch.long)])
-        data_list.append(Data(x=d.x, edge_index=d.edge_index,
-                              edge_attr=d.edge_attr, y=new_y))
+        self.dataset = dataset
+        self.root = root
+        self.D = D
+        super(SDFBenchmakr2015, self).__init__(root, transform, pre_transform,
+                                               pre_filter)
+        self.transform, self.pre_transform, self.pre_filter = transform, pre_transform, pre_filter
 
-    for d in dataset_2:
-        old_y = d.y
-        new_y = torch.cat(
-            [torch.zeros(d_1_y_dim, dtype=torch.long), old_y.long()])
-        data_list.append(Data(x=d.x, edge_index=d.edge_index,
-                              edge_attr=d.edge_attr, y=new_y))
+        if not empty:
+            self.data, self.slices = torch.load(self.processed_paths[0])
 
-    # create 'empty' dataset obj. Just randomly pick a dataset and root path
-    # that has already been processed
-    new_dataset = MoleculeDataset(root='dataset/chembl_with_labels',
-                                  dataset='chembl_with_labels', empty=True)
-    # collate manually
-    new_dataset.data, new_dataset.slices = new_dataset.collate(data_list)
+    @property
+    def raw_file_names(self):
+        file_name_list = os.listdir(self.raw_dir)
+        # assert len(file_name_list) == 1     # currently assume we have a
+        # # single raw file
+        return file_name_list
 
-    return new_dataset
+    @property
+    def processed_file_names(self):
+        return f'geometric_data_processed-{self.D}D.pt'
+
+    def download(self):
+        raise NotImplementedError('Must indicate valid location of raw data. '
+                                  'No download allowed')
+
+    def process(self):
+        data_smiles_list = []
+        data_list = []
+
+        if self.dataset == '435008':
+            for file, label in [(f'{self.dataset}_actives_clean.smi', 1),
+                                (f'{self.dataset}_inactives_clean.smi', 0)]:
+                smiles_path = os.path.join(self.root, 'raw', file)
+                smiles_list = pd.read_csv(smiles_path, sep='\t', header=None)[0]
+
+                for i in tqdm(range(len(smiles_list)), desc=f'{file}'):
+                    smi = smiles_list[i]
+
+                    data = smiles2graph(2, smi)
+                    if data is None:
+                        continue
+                    data.id = torch.tensor([i])
+                    data.y = torch.tensor([label])
+                    data.smiles = smi
+                    # print(data)
+                    data_list.append(data)
+                    data_smiles_list.append(smiles_list[i])
+
+        else:
+            raise ValueError('Invalid dataset name')
+
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
+
+        if self.pre_transform is not None:
+            data_list = [self.pre_transform(data) for data in data_list]
+
+        # write data_smiles_list in processed paths
+        data_smiles_series = pd.Series(data_smiles_list)
+        data_smiles_series.to_csv(os.path.join(self.processed_dir,
+                                               'smiles.csv'), index=False,
+                                  header=False)
+
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])
 
 
 def create_circular_fingerprint(mol, radius, size, chirality):
@@ -334,144 +376,6 @@ def create_circular_fingerprint(mol, radius, size, chirality):
                                        nBits=size, useChirality=chirality)
     return np.array(fp)
 
-
-class MoleculeFingerprintDataset(data.Dataset):
-    def __init__(self, root, dataset, radius, size, chirality=True):
-        """
-        Create dataset object containing list of dicts, where each dict
-        contains the circular fingerprint of the molecule, label, id,
-        and possibly precomputed fold information
-        :param root: directory of the dataset, containing a raw and
-        processed_fp dir. The raw dir should contain the file containing the
-        smiles, and the processed_fp dir can either be empty or a
-        previously processed file
-        :param dataset: name of dataset. Currently only implemented for
-        tox21, hiv, chembl_with_labels
-        :param radius: radius of the circular fingerprints
-        :param size: size of the folded fingerprint vector
-        :param chirality: if True, fingerprint includes chirality information
-        """
-        self.dataset = dataset
-        self.root = root
-        self.radius = radius
-        self.size = size
-        self.chirality = chirality
-
-        self._load()
-
-    def _process(self):
-        data_smiles_list = []
-        data_list = []
-        if self.dataset == 'chembl_with_labels':
-            smiles_list, rdkit_mol_objs, folds, labels = \
-                _load_chembl_with_labels_dataset(
-                    os.path.join(self.root, 'raw'))
-            print('processing')
-            for i in range(len(rdkit_mol_objs)):
-                print(i)
-                rdkit_mol = rdkit_mol_objs[i]
-                if rdkit_mol != None:
-                    # # convert aromatic bonds to double bonds
-                    fp_arr = create_circular_fingerprint(rdkit_mol,
-                                                         self.radius,
-                                                         self.size, self.chirality)
-                    fp_arr = torch.tensor(fp_arr)
-                    # manually add mol id
-                    # id here is the index of the mol in
-                    id = torch.tensor([i])
-                    # the dataset
-                    y = torch.tensor(labels[i, :])
-                    # fold information
-                    if i in folds[0]:
-                        fold = torch.tensor([0])
-                    elif i in folds[1]:
-                        fold = torch.tensor([1])
-                    else:
-                        fold = torch.tensor([2])
-                    data_list.append({'fp_arr': fp_arr, 'id': id, 'y': y,
-                                      'fold': fold})
-                    data_smiles_list.append(smiles_list[i])
-        elif self.dataset == 'tox21':
-            smiles_list, rdkit_mol_objs, labels = \
-                _load_tox21_dataset(os.path.join(self.root, 'raw/tox21.csv'))
-            print('processing')
-            for i in range(len(smiles_list)):
-                print(i)
-                rdkit_mol = rdkit_mol_objs[i]
-                # convert aromatic bonds to double bonds
-                fp_arr = create_circular_fingerprint(rdkit_mol,
-                                                     self.radius,
-                                                     self.size,
-                                                     self.chirality)
-                fp_arr = torch.tensor(fp_arr)
-
-                # manually add mol id
-                id = torch.tensor([i])  # id here is the index of the mol in
-                # the dataset
-                y = torch.tensor(labels[i, :])
-                data_list.append({'fp_arr': fp_arr, 'id': id, 'y': y})
-                data_smiles_list.append(smiles_list[i])
-        elif self.dataset == 'hiv':
-            smiles_list, rdkit_mol_objs, labels = \
-                _load_hiv_dataset(os.path.join(self.root, 'raw/HIV.csv'))
-            print('processing')
-            for i in range(len(smiles_list)):
-                print(i)
-                rdkit_mol = rdkit_mol_objs[i]
-                # # convert aromatic bonds to double bonds
-                fp_arr = create_circular_fingerprint(rdkit_mol,
-                                                     self.radius,
-                                                     self.size,
-                                                     self.chirality)
-                fp_arr = torch.tensor(fp_arr)
-
-                # manually add mol id
-                id = torch.tensor([i])  # id here is the index of the mol in
-                # the dataset
-                y = torch.tensor([labels[i]])
-                data_list.append({'fp_arr': fp_arr, 'id': id, 'y': y})
-                data_smiles_list.append(smiles_list[i])
-        else:
-            raise ValueError('Invalid dataset name')
-
-        # save processed data objects and smiles
-        processed_dir = os.path.join(self.root, 'processed_fp')
-        data_smiles_series = pd.Series(data_smiles_list)
-        data_smiles_series.to_csv(os.path.join(processed_dir, 'smiles.csv'),
-                                  index=False,
-                                  header=False)
-        with open(os.path.join(processed_dir,
-                               'fingerprint_data_processed.pkl'),
-                  'wb') as f:
-            pickle.dump(data_list, f)
-
-    def _load(self):
-        processed_dir = os.path.join(self.root, 'processed_fp')
-        # check if saved file exist. If so, then load from save
-        file_name_list = os.listdir(processed_dir)
-        if 'fingerprint_data_processed.pkl' in file_name_list:
-            with open(os.path.join(processed_dir,
-                                   'fingerprint_data_processed.pkl'),
-                      'rb') as f:
-                self.data_list = pickle.load(f)
-        # if no saved file exist, then perform processing steps, save then
-        # reload
-        else:
-            self._process()
-            self._load()
-
-    def __len__(self):
-        return len(self.data_list)
-
-    def __getitem__(self, index):
-        # if iterable class is passed, return dataset objection
-        if hasattr(index, "__iter__"):
-            dataset = MoleculeFingerprintDataset(
-                self.root, self.dataset, self.radius, self.size, chirality=self.chirality)
-            dataset.data_list = [self.data_list[i] for i in index]
-            return dataset
-        else:
-            return self.data_list[index]
 
 
 # test MoleculeDataset object

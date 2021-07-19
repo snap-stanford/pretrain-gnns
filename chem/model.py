@@ -123,8 +123,7 @@ class GNN_graphpred(torch.nn.Module):
             self.graph_pred_linear = torch.nn.Linear(
                 self.mult * (self.num_layer + 1) * self.emb_dim, self.num_tasks)
         else:
-            self.graph_pred_linear = torch.nn.Linear(
-                4* num_kernel_layers, self.num_tasks)
+            self.graph_pred_linear = torch.nn.Linear(4* num_kernel_layers, self.num_tasks)
 
     def from_pretrained(self, model_file):
         # self.gnn = GNN(self.num_layer, self.emb_dim, JK = self.JK, drop_ratio = self.drop_ratio)
@@ -142,9 +141,9 @@ class GNN_graphpred(torch.nn.Module):
         node_representation = self.gnn(x= x, edge_index = edge_index, edge_attr = edge_attr, p = p)
         graph_representation = self.pool(node_representation, batch)
         pred = self.graph_pred_linear(graph_representation)
-        # print(f'graph_rep:{graph_representation}')
-        # print(f'pred:{pred}')
-        return pred,  graph_representation
+        # print(f'graph_rep:{graph_representation.shape}')
+        # print(f'pred:{pred.shape}')
+        return pred, graph_representation
 
 
 

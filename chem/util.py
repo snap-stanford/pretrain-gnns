@@ -298,9 +298,27 @@ def print_model_size(model):
     mem_bufs = sum([buf.nelement() * buf.element_size() for buf in model.buffers()])
     mem = mem_params + mem_bufs  # in bytes
 
-    print(f'num params:{len(list(model.parameters()))}')
     print(f'average param element size:{mean_element_size}, total param_elements:{num_element}, trainable_elements:{trainable_elements} ')
     print(f'total model memory consumed:{mem/1024/1024:.4f} MiB')
+
+    # print(f'num params:{len(list(model.parameters()))}')
+
+    # print param for each layer
+    previous_layer_num = -1
+    num_layer_param = 0
+    for name, param in model.state_dict().items():
+        name_segments = name.split('.')
+        if(len(name_segments) > 2):
+            layer_num = name_segments[2]
+
+            if(layer_num != previous_layer_num):
+                previous_layer_num = layer_num
+                print(f'num_layer_param:{num_layer_param}')
+                num_layer_param = 0
+
+            num_layer_param += param.nelement()
+            print(f'param name:{name}, shape:{param.shape}, nelement:{param.nelement()}')
+    print(f'num_layer_param:{num_layer_param}')
 
 
 if __name__ == "__main__":
