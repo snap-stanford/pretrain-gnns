@@ -35,8 +35,8 @@ tensorboardx              1.6
 ## Dataset download
 All the necessary data files can be downloaded from the following links.
 
-For the chemistry dataset, download from [chem data](http://snap.stanford.edu/gnn-pretrain/data/chem_dataset.zip) (2.5GB), unzip it, and put it under `chem/`.
-For the biology dataset, download from [bio data](http://snap.stanford.edu/gnn-pretrain/data/bio_dataset.zip) (2GB), unzip it, and put it under `bio/`.
+For the chemistry dataset, download from [chem data](https://snap.stanford.edu/gnn-pretrain/data/chem_dataset.zip) (2.5GB), unzip it, and put it under `chem/`.
+For the biology dataset, download from [bio data](https://snap.stanford.edu/gnn-pretrain/data/bio_dataset.zip) (2GB), unzip it, and put it under `bio/`.
 
 ## Pre-training and fine-tuning
 In each directory, we have three kinds of files used to train GNNs.
