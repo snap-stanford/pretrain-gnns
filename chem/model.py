@@ -37,7 +37,6 @@ class GINConv(MessagePassing):
     def forward(self, x, edge_index, edge_attr):
         #add self loops in the edge space
         edge_index = add_self_loops(edge_index, num_nodes = x.size(0))
-
         #add features corresponding to self-loop edges.
         self_loop_attr = torch.zeros(x.size(0), 2)
         self_loop_attr[:,0] = 4 #bond type for self-loop edge
@@ -46,7 +45,7 @@ class GINConv(MessagePassing):
 
         edge_embeddings = self.edge_embedding1(edge_attr[:,0]) + self.edge_embedding2(edge_attr[:,1])
 
-        return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings)
+        return self.propagate(edge_index[0], x=x, edge_attr=edge_embeddings)
 
     def message(self, x_j, edge_attr):
         return x_j + edge_attr
