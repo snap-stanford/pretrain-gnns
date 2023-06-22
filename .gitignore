@@ -4,3 +4,5 @@ bio/bio_dataset.zip
 bio/dataset
 dataset/
 */__pycache__/
+build
+dist
