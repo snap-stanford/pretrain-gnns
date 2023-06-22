@@ -1,0 +1,6 @@
+chem/chem_dataset.zip
+chem/dataset
+bio/bio_dataset.zip
+bio/dataset
+dataset/
+*/__pycache__/
