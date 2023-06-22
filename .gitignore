@@ -1,8 +1,8 @@
-chem/chem_dataset.zip
-chem/dataset
-bio/bio_dataset.zip
-bio/dataset
-dataset/
+pyg_pretrained/chem/chem_dataset.zip
+pyg_pretrained/chem/dataset
+pyg_pretrained/bio/bio_dataset.zip
+pyg_pretrained/bio/dataset
+pyg_pretrained/dataset/
 */__pycache__/
 build
 dist
