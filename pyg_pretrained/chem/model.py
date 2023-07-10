@@ -355,6 +355,15 @@ class GNN_graphpred(torch.nn.Module):
         self.gnn.load_state_dict(torch.load(model_file))
 
     def forward(self, *argv):
+        batch, node_representation = self._generate_embeddings(*argv)
+
+        return self.graph_pred_linear(self.pool(node_representation, batch))
+
+    def embeddings(self, *argv):
+        batch, node_representation = self._generate_embeddings(*argv)
+        return self.pool(node_representation, batch)
+
+    def _generate_embeddings(self, *argv):
         if len(argv) == 4:
             x, edge_index, edge_attr, batch = argv[0], argv[1], argv[2], argv[3]
         elif len(argv) == 1:
@@ -363,9 +372,7 @@ class GNN_graphpred(torch.nn.Module):
         else:
             raise ValueError("unmatched number of arguments.")
 
-        node_representation = self.gnn(x, edge_index, edge_attr)
-
-        return self.graph_pred_linear(self.pool(node_representation, batch))
+        return batch, self.gnn(x, edge_index, edge_attr)
 
 
 if __name__ == "__main__":

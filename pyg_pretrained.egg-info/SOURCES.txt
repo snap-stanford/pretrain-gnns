@@ -1,5 +1,6 @@
 LICENSE
 README.md
+setup.cfg
 setup.py
 pyg_pretrained/__init__.py
 pyg_pretrained.egg-info/PKG-INFO

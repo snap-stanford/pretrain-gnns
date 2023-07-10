@@ -2,7 +2,6 @@ Metadata-Version: 2.1
 Name: pyg-pretrained
 Version: 0.1
 Summary: Pretrained GNN models
-Home-page: https://www.python.org/sigs/distutils-sig/
 Author: Montai Health
 Author-email: cme@montai.com
 License-File: LICENSE
