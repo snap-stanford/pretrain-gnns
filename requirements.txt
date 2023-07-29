@@ -1,0 +1,11 @@
+numpy
+torch==1.0.1
+torch-cluster==1.2.4              
+torch-geometric==1.0.3
+torch-scatter==1.1.2 
+torch-sparse==0.2.4
+torch-spline-conv==1.0.6
+rdkit-pypi
+tqdm
+tensorboardx==1.6
+sklearn
