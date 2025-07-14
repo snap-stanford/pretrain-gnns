@@ -16,7 +16,7 @@ from torch_geometric.data import Data
 from torch_geometric.data import InMemoryDataset
 from torch_geometric.data import Batch
 from itertools import repeat, product, chain
-
+import tqdm
 
 # allowable node and edge features
 allowable_features = {
@@ -325,8 +325,8 @@ class MoleculeDataset(InMemoryDataset):
                                    dtype='str')
             smiles_list = list(input_df['smiles'])
             zinc_id_list = list(input_df['zinc_id'])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 s = smiles_list[i]
                 # each example contains a single species
                 try:
@@ -398,8 +398,8 @@ class MoleculeDataset(InMemoryDataset):
                 _load_chembl_with_labels_dataset(os.path.join(self.root, 'raw'))
 
             print('processing')
-            for i in range(len(rdkit_mol_objs)):
-                print(i)
+            for i in tqdm.tqdm(range(len(rdkit_mol_objs))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol != None:
                     # # convert aromatic bonds to double bonds
@@ -428,8 +428,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'tox21':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_tox21_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 ## convert aromatic bonds to double bonds
                 #Chem.SanitizeMol(rdkit_mol,
@@ -446,8 +446,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'hiv':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_hiv_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -464,8 +464,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'bace':
             smiles_list, rdkit_mol_objs, folds, labels = \
                 _load_bace_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -483,8 +483,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'bbbp':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_bbbp_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol != None:
                     # # convert aromatic bonds to double bonds
@@ -502,8 +502,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'clintox':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_clintox_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol != None:
                     # # convert aromatic bonds to double bonds
@@ -521,8 +521,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'esol':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_esol_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -539,8 +539,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'freesolv':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_freesolv_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -557,8 +557,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'lipophilicity':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_lipophilicity_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -575,8 +575,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'muv':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_muv_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -593,8 +593,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'pcba':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_pcba_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -614,8 +614,8 @@ class MoleculeDataset(InMemoryDataset):
             downstream_inchi = set(pd.read_csv(os.path.join(self.root,
                                                             'downstream_mol_inchi_may_24_2019'),
                                                sep=',', header=None)[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 if '.' not in smiles_list[i]:   # remove examples with
                     # multiples species
                     rdkit_mol = rdkit_mol_objs[i]
@@ -635,13 +635,11 @@ class MoleculeDataset(InMemoryDataset):
                             data_list.append(data)
                             data_smiles_list.append(smiles_list[i])
 
-        # elif self.dataset == ''
-
         elif self.dataset == 'sider':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_sider_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 # # convert aromatic bonds to double bonds
                 # Chem.SanitizeMol(rdkit_mol,
@@ -658,8 +656,8 @@ class MoleculeDataset(InMemoryDataset):
         elif self.dataset == 'toxcast':
             smiles_list, rdkit_mol_objs, labels = \
                 _load_toxcast_dataset(self.raw_paths[0])
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 rdkit_mol = rdkit_mol_objs[i]
                 if rdkit_mol != None:
                     # # convert aromatic bonds to double bonds
@@ -679,8 +677,8 @@ class MoleculeDataset(InMemoryDataset):
             input_df = pd.read_csv(input_path, sep=',', header=None, names=['id', 'label', 'smiles'])
             smiles_list = input_df['smiles']
             labels = input_df['label'].values
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 s = smiles_list[i]
                 rdkit_mol = AllChem.MolFromSmiles(s)
                 if rdkit_mol != None:  # ignore invalid mol objects
@@ -702,8 +700,8 @@ class MoleculeDataset(InMemoryDataset):
             # labels_path = 'dataset/mutag/raw/mutag_188_target.txt'
             smiles_list = pd.read_csv(smiles_path, sep=' ', header=None)[0]
             labels = pd.read_csv(labels_path, header=None)[0].values
-            for i in range(len(smiles_list)):
-                print(i)
+            for i in tqdm.tqdm(range(len(smiles_list))):
+                #print(i)
                 s = smiles_list[i]
                 rdkit_mol = AllChem.MolFromSmiles(s)
                 if rdkit_mol != None:  # ignore invalid mol objects
@@ -718,6 +716,7 @@ class MoleculeDataset(InMemoryDataset):
                     data_list.append(data)
                     data_smiles_list.append(smiles_list[i])
                     
+        # elif self.dataset == '':#write your own dataset func if needed!
 
         else:
             raise ValueError('Invalid dataset name')
@@ -1103,6 +1102,55 @@ def _load_muv_dataset(input_path):
     tasks = ['MUV-466', 'MUV-548', 'MUV-600', 'MUV-644', 'MUV-652', 'MUV-689',
        'MUV-692', 'MUV-712', 'MUV-713', 'MUV-733', 'MUV-737', 'MUV-810',
        'MUV-832', 'MUV-846', 'MUV-852', 'MUV-858', 'MUV-859']
+    labels = input_df[tasks]
+    # convert 0 to -1
+    labels = labels.replace(0, -1)
+    # convert nan to 0
+    labels = labels.fillna(0)
+    assert len(smiles_list) == len(rdkit_mol_objs_list)
+    assert len(smiles_list) == len(labels)
+    return smiles_list, rdkit_mol_objs_list, labels.values
+
+def _load_pcba_dataset(input_path):
+    """
+
+    :param input_path:
+    :return: list of smiles, list of rdkit mol obj, np.array containing the
+    labels
+    """
+    input_df = pd.read_csv(input_path, sep=',')
+    smiles_list = input_df['smiles']
+    rdkit_mol_objs_list = [AllChem.MolFromSmiles(s) for s in smiles_list]
+    tasks = ['PCBA-1030', 'PCBA-1379', 'PCBA-1452', 'PCBA-1454', 'PCBA-1457',
+             'PCBA-1458', 'PCBA-1460', 'PCBA-1461', 'PCBA-1468', 'PCBA-1469',
+             'PCBA-1471', 'PCBA-1479', 'PCBA-1631', 'PCBA-1634', 'PCBA-1688',
+             'PCBA-1721', 'PCBA-2100', 'PCBA-2101', 'PCBA-2147', 'PCBA-2242',
+             'PCBA-2326', 'PCBA-2451', 'PCBA-2517', 'PCBA-2528', 'PCBA-2546',
+             'PCBA-2549', 'PCBA-2551', 'PCBA-2662', 'PCBA-2675', 'PCBA-2676',
+             'PCBA-411', 'PCBA-463254', 'PCBA-485281', 'PCBA-485290',
+             'PCBA-485294', 'PCBA-485297', 'PCBA-485313', 'PCBA-485314',
+             'PCBA-485341', 'PCBA-485349', 'PCBA-485353', 'PCBA-485360',
+             'PCBA-485364', 'PCBA-485367', 'PCBA-492947', 'PCBA-493208',
+             'PCBA-504327', 'PCBA-504332', 'PCBA-504333', 'PCBA-504339',
+             'PCBA-504444', 'PCBA-504466', 'PCBA-504467', 'PCBA-504706',
+             'PCBA-504842', 'PCBA-504845', 'PCBA-504847', 'PCBA-504891',
+             'PCBA-540276', 'PCBA-540317', 'PCBA-588342', 'PCBA-588453',
+             'PCBA-588456', 'PCBA-588579', 'PCBA-588590', 'PCBA-588591',
+             'PCBA-588795', 'PCBA-588855', 'PCBA-602179', 'PCBA-602233',
+             'PCBA-602310', 'PCBA-602313', 'PCBA-602332', 'PCBA-624170',
+             'PCBA-624171', 'PCBA-624173', 'PCBA-624202', 'PCBA-624246',
+             'PCBA-624287', 'PCBA-624288', 'PCBA-624291', 'PCBA-624296',
+             'PCBA-624297', 'PCBA-624417', 'PCBA-651635', 'PCBA-651644',
+             'PCBA-651768', 'PCBA-651965', 'PCBA-652025', 'PCBA-652104',
+             'PCBA-652105', 'PCBA-652106', 'PCBA-686970', 'PCBA-686978',
+             'PCBA-686979', 'PCBA-720504', 'PCBA-720532', 'PCBA-720542',
+             'PCBA-720551', 'PCBA-720553', 'PCBA-720579', 'PCBA-720580',
+             'PCBA-720707', 'PCBA-720708', 'PCBA-720709', 'PCBA-720711',
+             'PCBA-743255', 'PCBA-743266', 'PCBA-875', 'PCBA-881', 'PCBA-883',
+             'PCBA-884', 'PCBA-885', 'PCBA-887', 'PCBA-891', 'PCBA-899',
+             'PCBA-902', 'PCBA-903', 'PCBA-904', 'PCBA-912', 'PCBA-914',
+             'PCBA-915', 'PCBA-924', 'PCBA-925', 'PCBA-926', 'PCBA-927',
+             'PCBA-938', 'PCBA-995']
     labels = input_df[tasks]
     # convert 0 to -1
     labels = labels.replace(0, -1)
