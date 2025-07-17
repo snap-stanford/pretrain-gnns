@@ -97,7 +97,7 @@ def main():
     parser.add_argument('--dropout_ratio', type=float, default=0,
                         help='dropout ratio (default: 0)')
     parser.add_argument('--mask_rate', type=float, default=0.15,
-                        help='dropout ratio (default: 0.15)')
+                        help='mask rate (default: 0.15)')
     parser.add_argument('--mask_edge', type=int, default=0,
                         help='whether to mask edges or not together with atoms')
     parser.add_argument('--JK', type=str, default="last",
