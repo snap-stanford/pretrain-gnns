@@ -266,7 +266,7 @@ def cv_random_split(dataset, fold_idx = 0,
 
 
 if __name__ == "__main__":
-    from loader import MoleculeDataset
+    from data import MoleculeDataset
     from rdkit import Chem
     import pandas as pd
 

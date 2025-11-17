@@ -1,7 +1,4 @@
 import argparse
-
-from loader import MoleculeDataset
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,26 +9,21 @@ import numpy as np
 
 #from model import GNN
 from model import GNN
-from sklearn.metrics import roc_auc_score
 
-from splitters import scaffold_split, random_split, random_scaffold_split
-import pandas as pd
-
-from util import ExtractSubstructureContextPair
-
-from dataloader import DataLoaderSubstructContext
-
+from context import ExtractSubstructureContextPair,DataLoaderSubstructContext
+from data import MoleculeDataset
 from torch_geometric.nn import global_add_pool, global_mean_pool, global_max_pool
 
-from tensorboardX import SummaryWriter
 
-def pool_func(x, batch, mode = "sum"):
+def pool_func(x, batch, mode = "sum", size=None):
     if mode == "sum":
-        return global_add_pool(x, batch)
+        return global_add_pool(x, batch, size=size)
     elif mode == "mean":
-        return global_mean_pool(x, batch)
+        return global_mean_pool(x, batch, size=size)
     elif mode == "max":
-        return global_max_pool(x, batch)
+        return global_max_pool(x, batch, size=size)
+    else:
+        raise ValueError(f"Invalid pooling mode: {mode}")
 
 def cycle_index(num, shift):
     arr = torch.arange(num) + shift
@@ -47,24 +39,24 @@ def train(args, model_substruct, model_context, loader, optimizer_substruct, opt
     balanced_loss_accum = 0
     acc_accum = 0
 
-    for step, batch in enumerate(tqdm(loader, desc="Iteration")):
+    for step, batch in enumerate(tqdm(loader, desc="Iteration"), start=1):
         batch = batch.to(device)
 
         # creating substructure representation
         substruct_rep = model_substruct(batch.x_substruct, batch.edge_index_substruct, batch.edge_attr_substruct)[batch.center_substruct_idx]
-        
-        ### creating context representations
+
+        # creating context representations
         overlapped_node_rep = model_context(batch.x_context, batch.edge_index_context, batch.edge_attr_context)[batch.overlap_context_substruct_idx]
 
-        #Contexts are represented by 
+        num_graphs = int(substruct_rep.size(0))  # 与每个样本的子结构数一致
         if args.mode == "cbow":
-            # positive context representation
-            context_rep = pool_func(overlapped_node_rep, batch.batch_overlapped_context, mode = args.context_pooling)
-            # negative contexts are obtained by shifting the indicies of context embeddings
-            neg_context_rep = torch.cat([context_rep[cycle_index(len(context_rep), i+1)] for i in range(args.neg_samples)], dim = 0)
-            
-            pred_pos = torch.sum(substruct_rep * context_rep, dim = 1)
-            pred_neg = torch.sum(substruct_rep.repeat((args.neg_samples, 1))*neg_context_rep, dim = 1)
+            # positive context representation（为空的图会得到全零向量，长度与 num_graphs 对齐）
+            context_rep = pool_func(overlapped_node_rep, batch.batch_overlapped_context, mode=args.context_pooling, size=num_graphs)
+            # negative contexts
+            neg_context_rep = torch.cat([context_rep[cycle_index(len(context_rep), i+1)] for i in range(args.neg_samples)], dim=0)
+
+            pred_pos = torch.sum(substruct_rep * context_rep, dim=1)
+            pred_neg = torch.sum(substruct_rep.repeat((args.neg_samples, 1)) * neg_context_rep, dim=1)
 
         elif args.mode == "skipgram":
 
@@ -99,7 +91,10 @@ def train(args, model_substruct, model_context, loader, optimizer_substruct, opt
         balanced_loss_accum += float(loss_pos.detach().cpu().item() + loss_neg.detach().cpu().item())
         acc_accum += 0.5* (float(torch.sum(pred_pos > 0).detach().cpu().item())/len(pred_pos) + float(torch.sum(pred_neg < 0).detach().cpu().item())/len(pred_neg))
 
-    return balanced_loss_accum/step, acc_accum/step
+    num_steps = len(loader)
+    if num_steps == 0:
+        return 0.0, 0.0
+    return balanced_loss_accum/num_steps, acc_accum/num_steps
 
 def main():
     # Training settings
@@ -115,7 +110,7 @@ def main():
     parser.add_argument('--decay', type=float, default=0,
                         help='weight decay (default: 0)')
     parser.add_argument('--num_layer', type=int, default=5,
-                        help='number of GNN message passing layers (default: 5).')
+                        help='number of GNN message passing layers (default: 2).')
     parser.add_argument('--csize', type=int, default=3,
                         help='context size (default: 3).')
     parser.add_argument('--emb_dim', type=int, default=300,
