@@ -16,14 +16,14 @@ The `chem/` folder provides:
 - Supervised fine-tuning for classification tasks (`finetune.py`)
 - Common dataset splitters (scaffold, random, random_scaffold) (`splitters.py`)
 
-Run commands from the repo root (`pre/`) so relative paths like `dataset/...` resolve correctly.
+Run commands from the repository root so relative paths like `dataset/...` resolve correctly.
 
 ## Installation
 
 Tested with Python 3.11. Create a virtual environment and install dependencies from the repo root:
 
 ```bash
-# from pre/
+# from repo root
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -43,11 +43,10 @@ Notes:
 
 ## Data preparation
 
-The code expects dataset directories under `pre/dataset/` (run from repo root):
+The code expects dataset directories under `dataset/` (run from repo root):
 
 ```
-pre/
-    dataset/
+dataset/
         hiv/
             raw/
                 hiv.csv
@@ -94,7 +93,7 @@ Choose via `--split` in `finetune.py`:
 Example (CBOW mode on ZINC standard agent):
 
 ```bash
-# from pre/
+# from repo root
 python chem/pretrain_contextpred.py \
     --dataset zinc_standard_agent \
     --output_model_file runs/pretrained/contextpred_gnn \
@@ -116,7 +115,7 @@ The saved weights contain the GNN backbone only; the classification head will be
 Example (HIV, single task):
 
 ```bash
-# from pre/
+# from repo root
 python chem/finetune.py \
     --dataset hiv \
     --input_model_file runs/pretrained/contextpred_gnn.pth \
@@ -151,7 +150,7 @@ If your CSV schema is `smiles` + a single binary label column (0/1), you can plu
 2) Call fine-tuning:
 
 ```bash
-# from pre/
+# from repo root
 python chem/finetune.py --dataset jcesr --split scaffold --epochs 100 --batch_size 32
 ```
 

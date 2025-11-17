@@ -5,9 +5,9 @@ from torch_geometric.nn import global_add_pool, global_mean_pool, global_max_poo
 import torch.nn.functional as F
 from torch_scatter import scatter_add
 from torch_geometric.nn.inits import glorot, zeros
-
+from torch import nn
 num_atom_type = 120 #including the extra mask tokens
-num_chirality_tag = 3
+num_chirality_tag = 4
 
 num_bond_type = 6 #including aromatic and self-loop edge, and extra masked tokens
 num_bond_direction = 3 
@@ -35,8 +35,24 @@ class GINConv(MessagePassing):
         self.aggr = aggr
 
     def forward(self, x, edge_index, edge_attr):
-        #add self loops in the edge space
-        edge_index = add_self_loops(edge_index, num_nodes = x.size(0))
+        # 输入校验（x 为嵌入后的特征，可为 float；edge_index/edge_attr 需严格）
+        if not isinstance(x, torch.Tensor) or x.dim() != 2:
+            raise TypeError(f"x expected 2D Tensor (embedded features), got {type(x)} with shape {getattr(x, 'shape', None)}")
+        if not isinstance(edge_index, torch.Tensor):
+            raise TypeError(f"edge_index must be Tensor, got {type(edge_index)}")
+        if edge_index.dim() != 2 or edge_index.size(0) != 2:
+            raise ValueError(f"edge_index expected shape [2,E], got {tuple(edge_index.shape)}")
+        if edge_index.dtype not in (torch.long, torch.int64):
+            raise TypeError(f"edge_index expected dtype long, got {edge_index.dtype}")
+        if not isinstance(edge_attr, torch.Tensor):
+            raise TypeError(f"edge_attr must be Tensor, got {type(edge_attr)}")
+        if edge_attr.dim() != 2 or edge_attr.size(1) != 2:
+            raise ValueError(f"edge_attr expected shape [E,2], got {tuple(edge_attr.shape)}")
+        if edge_attr.size(0) != edge_index.size(1):
+            raise ValueError(f"edge_attr rows (E={edge_attr.size(0)}) must match edge_index edges (E={edge_index.size(1)}) before self-loops")
+
+        # add self loops in the edge space (PyG returns a tuple)
+        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
 
         #add features corresponding to self-loop edges.
         self_loop_attr = torch.zeros(x.size(0), 2)
@@ -46,7 +62,7 @@ class GINConv(MessagePassing):
 
         edge_embeddings = self.edge_embedding1(edge_attr[:,0]) + self.edge_embedding2(edge_attr[:,1])
 
-        return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings)
+        return self.propagate(edge_index, x=x, edge_attr=edge_embeddings)
 
     def message(self, x_j, edge_attr):
         return x_j + edge_attr
@@ -83,8 +99,24 @@ class GCNConv(MessagePassing):
 
 
     def forward(self, x, edge_index, edge_attr):
-        #add self loops in the edge space
-        edge_index = add_self_loops(edge_index, num_nodes = x.size(0))
+        # 输入校验（x 为嵌入后的特征，可为 float；edge_index/edge_attr 需严格）
+        if not isinstance(x, torch.Tensor) or x.dim() != 2:
+            raise TypeError(f"x expected 2D Tensor (embedded features), got {type(x)} with shape {getattr(x, 'shape', None)}")
+        if not isinstance(edge_index, torch.Tensor):
+            raise TypeError(f"edge_index must be Tensor, got {type(edge_index)}")
+        if edge_index.dim() != 2 or edge_index.size(0) != 2:
+            raise ValueError(f"edge_index expected shape [2,E], got {tuple(edge_index.shape)}")
+        if edge_index.dtype not in (torch.long, torch.int64):
+            raise TypeError(f"edge_index expected dtype long, got {edge_index.dtype}")
+        if not isinstance(edge_attr, torch.Tensor):
+            raise TypeError(f"edge_attr must be Tensor, got {type(edge_attr)}")
+        if edge_attr.dim() != 2 or edge_attr.size(1) != 2:
+            raise ValueError(f"edge_attr expected shape [E,2], got {tuple(edge_attr.shape)}")
+        if edge_attr.size(0) != edge_index.size(1):
+            raise ValueError(f"edge_attr rows (E={edge_attr.size(0)}) must match edge_index edges (E={edge_index.size(1)}) before self-loops")
+
+        # add self loops in the edge space (PyG returns a tuple)
+        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
 
         #add features corresponding to self-loop edges.
         self_loop_attr = torch.zeros(x.size(0), 2)
@@ -98,7 +130,7 @@ class GCNConv(MessagePassing):
 
         x = self.linear(x)
 
-        return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings, norm = norm)
+        return self.propagate(edge_index, x=x, edge_attr=edge_embeddings, norm=norm)
 
     def message(self, x_j, edge_attr, norm):
         return norm.view(-1, 1) * (x_j + edge_attr)
@@ -132,9 +164,24 @@ class GATConv(MessagePassing):
         zeros(self.bias)
 
     def forward(self, x, edge_index, edge_attr):
+        # 输入校验（x 为嵌入后的特征，可为 float；edge_index/edge_attr 需严格）
+        if not isinstance(x, torch.Tensor) or x.dim() != 2:
+            raise TypeError(f"x expected 2D Tensor (embedded features), got {type(x)} with shape {getattr(x, 'shape', None)}")
+        if not isinstance(edge_index, torch.Tensor):
+            raise TypeError(f"edge_index must be Tensor, got {type(edge_index)}")
+        if edge_index.dim() != 2 or edge_index.size(0) != 2:
+            raise ValueError(f"edge_index expected shape [2,E], got {tuple(edge_index.shape)}")
+        if edge_index.dtype not in (torch.long, torch.int64):
+            raise TypeError(f"edge_index expected dtype long, got {edge_index.dtype}")
+        if not isinstance(edge_attr, torch.Tensor):
+            raise TypeError(f"edge_attr must be Tensor, got {type(edge_attr)}")
+        if edge_attr.dim() != 2 or edge_attr.size(1) != 2:
+            raise ValueError(f"edge_attr expected shape [E,2], got {tuple(edge_attr.shape)}")
+        if edge_attr.size(0) != edge_index.size(1):
+            raise ValueError(f"edge_attr rows (E={edge_attr.size(0)}) must match edge_index edges (E={edge_index.size(1)}) before self-loops")
 
-        #add self loops in the edge space
-        edge_index = add_self_loops(edge_index, num_nodes = x.size(0))
+        # add self loops in the edge space (PyG returns a tuple)
+        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
 
         #add features corresponding to self-loop edges.
         self_loop_attr = torch.zeros(x.size(0), 2)
@@ -145,7 +192,7 @@ class GATConv(MessagePassing):
         edge_embeddings = self.edge_embedding1(edge_attr[:,0]) + self.edge_embedding2(edge_attr[:,1])
 
         x = self.weight_linear(x).view(-1, self.heads, self.emb_dim)
-        return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings)
+        return self.propagate(edge_index, x=x, edge_attr=edge_embeddings)
 
     def message(self, edge_index, x_i, x_j, edge_attr):
         edge_attr = edge_attr.view(-1, self.heads, self.emb_dim)
@@ -180,8 +227,24 @@ class GraphSAGEConv(MessagePassing):
         self.aggr = aggr
 
     def forward(self, x, edge_index, edge_attr):
-        #add self loops in the edge space
-        edge_index = add_self_loops(edge_index, num_nodes = x.size(0))
+        # 输入校验（x 为嵌入后的特征，可为 float；edge_index/edge_attr 需严格）
+        if not isinstance(x, torch.Tensor) or x.dim() != 2:
+            raise TypeError(f"x expected 2D Tensor (embedded features), got {type(x)} with shape {getattr(x, 'shape', None)}")
+        if not isinstance(edge_index, torch.Tensor):
+            raise TypeError(f"edge_index must be Tensor, got {type(edge_index)}")
+        if edge_index.dim() != 2 or edge_index.size(0) != 2:
+            raise ValueError(f"edge_index expected shape [2,E], got {tuple(edge_index.shape)}")
+        if edge_index.dtype not in (torch.long, torch.int64):
+            raise TypeError(f"edge_index expected dtype long, got {edge_index.dtype}")
+        if not isinstance(edge_attr, torch.Tensor):
+            raise TypeError(f"edge_attr must be Tensor, got {type(edge_attr)}")
+        if edge_attr.dim() != 2 or edge_attr.size(1) != 2:
+            raise ValueError(f"edge_attr expected shape [E,2], got {tuple(edge_attr.shape)}")
+        if edge_attr.size(0) != edge_index.size(1):
+            raise ValueError(f"edge_attr rows (E={edge_attr.size(0)}) must match edge_index edges (E={edge_index.size(1)}) before self-loops")
+
+        # add self loops in the edge space (PyG returns a tuple)
+        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
 
         #add features corresponding to self-loop edges.
         self_loop_attr = torch.zeros(x.size(0), 2)
@@ -193,7 +256,7 @@ class GraphSAGEConv(MessagePassing):
 
         x = self.linear(x)
 
-        return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings)
+        return self.propagate(edge_index, x=x, edge_attr=edge_embeddings)
 
     def message(self, x_j, edge_attr):
         return x_j + edge_attr
@@ -219,7 +282,9 @@ class GNN(torch.nn.Module):
         node representations
 
     """
-    def __init__(self, num_layer, emb_dim, JK = "last", drop_ratio = 0, gnn_type = "gin"):
+    def __init__(self, num_layer, emb_dim, JK="last", drop_ratio=0, gnn_type="gin",
+                 # 新增：连续特征支持
+                 input_feature_dim=None, use_input_mlp=False):
         super(GNN, self).__init__()
         self.num_layer = num_layer
         self.drop_ratio = drop_ratio
@@ -228,6 +293,7 @@ class GNN(torch.nn.Module):
         if self.num_layer < 2:
             raise ValueError("Number of GNN layers must be greater than 1.")
 
+        # 离散特征路径（保留原有 embedding）
         self.x_embedding1 = torch.nn.Embedding(num_atom_type, emb_dim)
         self.x_embedding2 = torch.nn.Embedding(num_chirality_tag, emb_dim)
 
@@ -251,6 +317,19 @@ class GNN(torch.nn.Module):
         for layer in range(num_layer):
             self.batch_norms.append(torch.nn.BatchNorm1d(emb_dim))
 
+        # 新增：连续特征路径（可选）
+        self.use_input_mlp = use_input_mlp
+        if self.use_input_mlp:
+            assert input_feature_dim is not None and input_feature_dim > 0, \
+                "use_input_mlp=True 时必须提供 input_feature_dim"
+            self.input_proj = nn.Sequential(
+                nn.Linear(input_feature_dim, emb_dim),
+                nn.ReLU(),
+                nn.Linear(emb_dim, emb_dim)
+            )
+        else:
+            self.input_proj = None
+
     #def forward(self, x, edge_index, edge_attr):
     def forward(self, *argv):
         if len(argv) == 3:
@@ -261,7 +340,18 @@ class GNN(torch.nn.Module):
         else:
             raise ValueError("unmatched number of arguments.")
 
-        x = self.x_embedding1(x[:,0]) + self.x_embedding2(x[:,1])
+        # 新增：如果启用连续特征，先把 x 投到 emb_dim
+        if self.input_proj is not None:
+            if x is None:
+                raise ValueError("期望连续特征 x，但收到 None。请确认数据集提供 data.x。")
+            x = self.input_proj(x.float())
+        else:
+            # 原有的离散特征嵌入路径
+            # 期望 x 为 [N,2] 的 long 张量：原子类型与手性标签
+            if x.dtype != torch.long:
+                # 兜底修复：将 x 转为 long，避免因上游类型不一致导致的崩溃
+                x = x.long()
+            x = self.x_embedding1(x[:, 0]) + self.x_embedding2(x[:, 1])
 
         h_list = [x]
         for layer in range(self.num_layer):
@@ -351,9 +441,14 @@ class GNN_graphpred(torch.nn.Module):
         else:
             self.graph_pred_linear = torch.nn.Linear(self.mult * self.emb_dim, self.num_tasks)
 
-    def from_pretrained(self, model_file):
-        #self.gnn = GNN(self.num_layer, self.emb_dim, JK = self.JK, drop_ratio = self.drop_ratio)
-        self.gnn.load_state_dict(torch.load(model_file))
+    def from_pretrained(self, model_file: str):
+        ckpt = torch.load(model_file, map_location="cpu")
+        # 只加载 backbone，允许缺失/多余键
+        missing, unexpected = self.gnn.load_state_dict(ckpt, strict=False)
+        print(f"[from_pretrained] loaded with strict=False; "
+              f"missing: {len(missing)}, unexpected: {len(unexpected)}")
+        # 分类头保持随机初始化
+        return self
 
     def forward(self, *argv):
         if len(argv) == 4:

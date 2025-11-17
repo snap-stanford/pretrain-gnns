@@ -1,6 +1,6 @@
 import argparse
 
-from loader import MoleculeDataset
+from data import MoleculeDataset
 from torch_geometric.data import DataLoader
 
 import torch
@@ -14,7 +14,7 @@ import numpy as np
 from model import GNN, GNN_graphpred
 from sklearn.metrics import roc_auc_score
 
-from splitters import scaffold_split
+from splitters import scaffold_split, random_split, random_scaffold_split
 import pandas as pd
 
 import os
@@ -112,6 +112,11 @@ def main():
     parser.add_argument('--split', type = str, default="scaffold", help = "random or scaffold or random_scaffold")
     parser.add_argument('--eval_train', type=int, default = 0, help='evaluating training or not')
     parser.add_argument('--num_workers', type=int, default = 4, help='number of workers for dataset loading')
+    # 自检与训练管理
+    parser.add_argument('--shuffle_labels', type=int, default=0, help='shuffle labels within each split for sanity check (AUC should ~0.5)')
+    parser.add_argument('--save_best', type=int, default=1, help='save model when val improves')
+    parser.add_argument('--early_stop', type=int, default=0, help='enable early stopping based on val AUC')
+    parser.add_argument('--patience', type=int, default=10, help='epochs without improvement to stop when early_stop=1')
     args = parser.parse_args()
 
 
@@ -124,6 +129,8 @@ def main():
     #Bunch of classification tasks
     if args.dataset == "tox21":
         num_tasks = 12
+    elif args.dataset =="jcesr":
+        num_tasks = 1
     elif args.dataset == "hiv":
         num_tasks = 1
     elif args.dataset == "pcba":
@@ -164,6 +171,35 @@ def main():
 
     print(train_dataset[0])
 
+    # 打印每个划分的样本量与类分布
+    def split_stats(ds, name):
+        try:
+            y = ds.data.y.view(-1).cpu().numpy()
+            pos = int((y == 1).sum())
+            neg = int((y == -1).sum())
+            total = int(y.shape[0])
+            pos_ratio = pos / max(1, (pos + neg))
+            print(f"[{name}] total={total} pos={pos} neg={neg} pos_ratio={pos_ratio:.3f}")
+        except Exception as e:
+            print(f"[warn] failed to compute stats for {name}: {e}")
+
+    split_stats(train_dataset, 'train')
+    split_stats(valid_dataset, 'valid')
+    split_stats(test_dataset, 'test')
+
+    # 随机标签自检：应使 val/test AUC 约等于 0.5
+    if args.shuffle_labels:
+        import numpy as _np
+        rng = _np.random.RandomState(args.runseed)
+        def shuffle_ds_labels(ds):
+            y = ds.data.y.clone()
+            perm = torch.from_numpy(rng.permutation(y.size(0))).long()
+            ds.data.y = y[perm]
+        shuffle_ds_labels(train_dataset)
+        shuffle_ds_labels(valid_dataset)
+        shuffle_ds_labels(test_dataset)
+        print("[sanity] labels in each split are shuffled; expect AUC ~ 0.5.")
+
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers = args.num_workers)
     val_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers = args.num_workers)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers = args.num_workers)
@@ -198,6 +234,10 @@ def main():
             print("removed the existing file.")
         writer = SummaryWriter(fname)
 
+    best_val = float('-inf')
+    best_test = None
+    epochs_no_improve = 0
+
     for epoch in range(1, args.epochs+1):
         print("====epoch " + str(epoch))
         
@@ -214,6 +254,29 @@ def main():
 
         print("train: %f val: %f test: %f" %(train_acc, val_acc, test_acc))
 
+        # 记录 best val，并可选保存/早停
+        improved = val_acc > best_val
+        if improved:
+            best_val = val_acc
+            best_test = test_acc
+            epochs_no_improve = 0
+            if args.save_best and args.filename:
+                save_path = args.filename + "_best.pth"
+                torch.save({
+                    'gnn': model.gnn.state_dict(),
+                    'head': model.graph_pred_linear.state_dict(),
+                    'epoch': epoch,
+                    'val_auc': val_acc,
+                    'test_auc': test_acc,
+                    'args': vars(args),
+                }, save_path)
+                print(f"[checkpoint] saved best model to {save_path}")
+        else:
+            epochs_no_improve += 1
+            if args.early_stop and epochs_no_improve >= args.patience:
+                print(f"[early-stop] No improvement for {args.patience} epochs. Stop at epoch {epoch}.")
+                break
+
         val_acc_list.append(val_acc)
         test_acc_list.append(test_acc)
         train_acc_list.append(train_acc)
@@ -227,6 +290,9 @@ def main():
 
     if not args.filename == "":
         writer.close()
+
+    if best_test is not None:
+        print(f"[summary] best_val={best_val:.6f}, corresponding_test={best_test:.6f}")
 
 if __name__ == "__main__":
     main()
